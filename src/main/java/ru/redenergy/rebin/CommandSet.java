@@ -1,6 +1,7 @@
 package ru.redenergy.rebin;
 
 import net.minecraft.command.CommandBase;
+import net.minecraft.command.CommandHandler;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.server.MinecraftServer;
 import net.minecraftforge.common.config.ConfigCategory;
@@ -84,6 +85,11 @@ public abstract class CommandSet extends CommandBase {
         } catch (IllegalAccessException e) {
             e.printStackTrace();
         }
+    }
+
+    public static void register(CommandSet set){
+        set.collectCommands();
+        ((CommandHandler)MinecraftServer.getServer().getCommandManager()).registerCommand(set);
     }
 
 }
