@@ -2,11 +2,13 @@ package ru.redenergy.rebin;
 
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.ICommandSender;
+import net.minecraft.server.MinecraftServer;
 import net.minecraftforge.common.config.ConfigCategory;
 import ru.redenergy.rebin.annotation.Arg;
 import ru.redenergy.rebin.annotation.Command;
 import ru.redenergy.rebin.resolve.ResolveResult;
 import ru.redenergy.rebin.resolve.TemplateResolver;
+import ru.skymine.permissions.Permissions;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
@@ -33,7 +35,10 @@ public abstract class CommandSet extends CommandBase {
             String template = configuration.getCommandMethod().getAnnotation(Command.class).value();
             ResolveResult result = resolver.resolve(template, args);
             if(result.isSuccess()) {
-                invokeCommand(configuration, result.getArguments(), sender, args);
+                Command command = configuration.getCommandMethod().getAnnotation(Command.class);
+                if(command.permission().equals("#") || sender instanceof MinecraftServer || Permissions.hasPermission(sender.getCommandSenderName(), command.permission())) {
+                    invokeCommand(configuration, result.getArguments(), sender, args);
+                }
             }
         }
     }
