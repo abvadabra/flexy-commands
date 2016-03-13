@@ -57,6 +57,12 @@ public class TestCommandInvoke {
         assertEquals(message, outContent.toString());
     }
 
+    @Test
+    public void testSpecialSender(){
+        commandSet.processCommand(new TestCommandSender(), new String[0]);
+        assertEquals(new TestCommandSender().testUniqueMethid(), outContent.toString());
+    }
+
     private static class TestCommandSet extends CommandSet {
         @Override
         public String getCommandName() {
@@ -82,9 +88,18 @@ public class TestCommandInvoke {
         public void addMessage(@Arg("message") String message){
             System.out.print(message);
         }
+
+        @Command
+        public void specialSender(TestCommandSender testCommandSender){
+            System.out.print(testCommandSender.testUniqueMethid());
+        }
     }
 
     private static class TestCommandSender implements ICommandSender{
+
+        public String testUniqueMethid(){
+            return "I am Test Sender";
+        }
 
         @Override
         public String getCommandSenderName() {
