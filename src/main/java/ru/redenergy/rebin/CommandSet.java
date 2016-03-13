@@ -52,10 +52,10 @@ public abstract class CommandSet extends CommandBase {
         Object[] parameters = new Object[command.getParameters().length];
         for(int i = 0; i < command.getParameters().length; i++){
             Class clazz = command.getParameters()[i];
-            if(clazz.isAssignableFrom(ICommandSender.class)){
+            if(clazz.isAssignableFrom(sender.getClass())){
                 parameters[i] = sender;
             } else {
-                Arg arg = findArgumentAnnotation(command.getAnnotations()[i]);
+                Arg arg = findArgumentAnnotation(command.getAnnotations()[i]); // <|*|>
                 if(arg == null){
                     throw new RuntimeException("Unable to resolve arguments for " + command.getCommandMethod());
                 }
