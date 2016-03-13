@@ -4,6 +4,8 @@ import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandHandler;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.ChatComponentText;
+import net.minecraft.util.EnumChatFormatting;
 import net.minecraftforge.common.config.ConfigCategory;
 import ru.redenergy.rebin.annotation.Arg;
 import ru.redenergy.rebin.annotation.Command;
@@ -19,6 +21,9 @@ import java.util.List;
 import java.util.Map;
 
 public abstract class CommandSet extends CommandBase {
+
+    //TODO: Read message from external file
+    public static String NO_PERMISSION_MSG = EnumChatFormatting.RED + "\u041d\u0435\u0434\u043e\u0441\u0442\u0430\u0442\u043e\u0447\u043d\u043e \u043f\u0440\u0430\u0432\u0021";
 
     private final TemplateResolver resolver = new TemplateResolver();
     private List<CommandConfiguration> configs = new ArrayList<>();
@@ -39,6 +44,8 @@ public abstract class CommandSet extends CommandBase {
                 Command command = configuration.getCommandMethod().getAnnotation(Command.class);
                 if(command.permission().equals("#") || sender instanceof MinecraftServer || Permissions.hasPermission(sender.getCommandSenderName(), command.permission())) {
                     invokeCommand(configuration, result.getArguments(), sender, args);
+                } else {
+                    sender.addChatMessage(new ChatComponentText(NO_PERMISSION_MSG));
                 }
             }
         }
