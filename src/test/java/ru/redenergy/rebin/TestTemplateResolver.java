@@ -43,4 +43,15 @@ public class TestTemplateResolver {
         String[] candidate = new String[0];
         assertTrue(resolver.resolve(template, candidate).isSuccess());
     }
+
+    @Test
+    public void testVararg(){
+        String template = "set {target} {*values}";
+        String[] candidate ={"set", "Player", "VAL=1", "VAL=2", "VAL=3", "VAL=4"};
+        ResolveResult result = resolver.resolve(template, candidate);
+
+        assertTrue(result.isSuccess());
+        assertEquals("Player", result.getArguments().get("target"));
+        assertEquals("VAL=1 VAL=2 VAL=3 VAL=4", result.getArguments().get("values"));
+    }
 }

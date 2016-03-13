@@ -1,10 +1,12 @@
 package ru.redenergy.rebin;
 
+import com.google.common.collect.ImmutableList;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.util.ChunkCoordinates;
 import net.minecraft.util.IChatComponent;
 import net.minecraft.world.World;
 import org.apache.commons.io.output.ByteArrayOutputStream;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -13,6 +15,7 @@ import ru.redenergy.rebin.annotation.Arg;
 import ru.redenergy.rebin.annotation.Command;
 
 import java.io.PrintStream;
+import java.util.Arrays;
 
 import static org.junit.Assert.*;
 public class TestCommandInvoke {
@@ -44,6 +47,16 @@ public class TestCommandInvoke {
         assertEquals("test" + ":" + arg1 + ":" + arg2, outContent.toString());
     }
 
+    @Test
+    public void testVarargInvoke(){
+        String message = "Some funny rabbit in the sky";
+        commandSet.processCommand(new TestCommandSender(), ImmutableList.builder()
+                .add("add", "message")
+                .addAll(Arrays.asList(message.split(" ")))
+                .build().toArray(new String[8]));
+        assertEquals(message, outContent.toString());
+    }
+
     private static class TestCommandSet extends CommandSet {
         @Override
         public String getCommandName() {
@@ -63,6 +76,11 @@ public class TestCommandInvoke {
         @Command("empty")
         public void testEmptyCommand(){
             System.out.print("empty");
+        }
+
+        @Command("add message {*message}")
+        public void addMessage(@Arg("message") String message){
+            System.out.print(message);
         }
     }
 
