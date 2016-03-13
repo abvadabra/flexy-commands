@@ -6,7 +6,6 @@ import net.minecraft.command.ICommandSender;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.EnumChatFormatting;
-import net.minecraftforge.common.config.ConfigCategory;
 import ru.redenergy.rebin.annotation.Arg;
 import ru.redenergy.rebin.annotation.Command;
 import ru.redenergy.rebin.resolve.ResolveResult;
@@ -24,6 +23,8 @@ public abstract class CommandSet extends CommandBase {
 
     //TODO: Read message from external file
     public static String NO_PERMISSION_MSG = EnumChatFormatting.RED + "\u041d\u0435\u0434\u043e\u0441\u0442\u0430\u0442\u043e\u0447\u043d\u043e \u043f\u0440\u0430\u0432\u0021";
+    public static String UNABLE_TO_PROCESS = EnumChatFormatting.RED + "\u041d\u0435\u0432\u043e\u0437\u043c\u043e\u0436\u043d\u043e \u0432\u044b\u043f\u043e\u043b\u043d\u0438\u0442\u044c \u043a\u043e\u043c\u0430\u043d\u0434\u0443\u0021";
+    public static String EXCEPTION = EnumChatFormatting.RED + "\u0412\u043e \u0432\u0440\u0435\u043c\u044f \u0432\u044b\u043f\u043e\u043b\u043d\u0435\u043d\u0438\u044f \u043a\u043e\u043c\u0430\u043d\u0434\u044b \u043f\u0440\u043e\u0438\u0437\u043e\u0448\u043b\u0430 \u043e\u0448\u0438\u0431\u043a\u0430\u002e";
 
     private final TemplateResolver resolver = new TemplateResolver();
     private List<CommandConfiguration> configs = new ArrayList<>();
@@ -52,7 +53,12 @@ public abstract class CommandSet extends CommandBase {
     }
     
     private void invokeCommand(CommandConfiguration command, Map<String, String> extracted, ICommandSender sender, String[] args) throws InvocationTargetException, IllegalAccessException {
-        command.getCommandMethod().invoke(this, commandArguments(command, sender, extracted));
+        Object[] arguments = commandArguments(command, sender, extracted);
+        if (arguments != null) {
+            command.getCommandMethod().invoke(this, commandArguments(command, sender, extracted));
+        } else {
+            sender.addChatMessage(new ChatComponentText(UNABLE_TO_PROCESS));
+        }
     }
 
     private Object[] commandArguments(CommandConfiguration command, ICommandSender sender, Map<String, String> args){
@@ -64,7 +70,7 @@ public abstract class CommandSet extends CommandBase {
             } else {
                 Arg arg = findArgumentAnnotation(command.getAnnotations()[i]); // <|*|>
                 if(arg == null){
-                    throw new RuntimeException("Unable to resolve arguments for " + command.getCommandMethod());
+                    return null; //unable to process it, most possibly because command is limited to sender type, e.g. Console tried to access in-game only command
                 }
                 parameters[i] = args.get(arg.value());
             }
@@ -87,10 +93,9 @@ public abstract class CommandSet extends CommandBase {
     public void processCommand(ICommandSender sender, String[] args) {
         try {
             resolveAndInvoke(sender, args);
-        } catch (InvocationTargetException e) {
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
+        } catch (Exception exception){
+            sender.addChatMessage(new ChatComponentText(EXCEPTION));
+            exception.printStackTrace();
         }
     }
 
