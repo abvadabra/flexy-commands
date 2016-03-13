@@ -20,9 +20,11 @@ public class TemplateResolver {
     public ResolveResult resolve(String template, String[] args){
         if(template.isEmpty() && args.length == 0) return new ResolveResult(true);
         String[] pattern = template.split(" ");
-        if(pattern.length != args.length)
-            if((!pattern[pattern.length - 1].matches("\\{\\*.*\\}") && pattern.length > args.length)) //if last argument is vararg {*value}
+        boolean containsVararg = pattern[pattern.length - 1].matches("\\{\\*.*\\}");
+        if((pattern.length != args.length && !containsVararg) || (containsVararg && pattern.length > args.length))
                 return new ResolveResult(false);
+
+
 
         Map<String, String> arguments = new HashMap<>();
         for(int i = 0; i < pattern.length; i++){
