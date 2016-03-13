@@ -1,5 +1,8 @@
 package ru.redenergy.rebin.resolve;
 
+import com.google.common.base.Joiner;
+
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -17,13 +20,22 @@ public class TemplateResolver {
     public ResolveResult resolve(String template, String[] args){
         if(template.isEmpty() && args.length == 0) return new ResolveResult(true);
         String[] pattern = template.split(" ");
-        if(pattern.length != args.length) return new ResolveResult(false);
+        if(pattern.length != args.length)
+            if((!pattern[pattern.length - 1].matches("\\{\\*.*\\}") && pattern.length > args.length)) //if last argument is vararg {*value}
+                return new ResolveResult(false);
 
         Map<String, String> arguments = new HashMap<>();
         for(int i = 0; i < pattern.length; i++){
             String origin = pattern[i];
             String application = args[i];
-            if(origin.matches("\\{.*\\}")){
+
+            if(origin.matches("\\{\\*.*\\}")){ //{*value}
+                String value = Joiner.on(" ").join(Arrays.copyOfRange(args, i, args.length));
+                arguments.put(origin.substring(2, origin.length() - 1), value);
+                break;
+            }
+
+            if(origin.matches("\\{.*\\}")){ //{value}
                 arguments.put(origin.substring(1, origin.length() - 1), application);
                 continue;
             }
