@@ -1,5 +1,6 @@
 package ru.redenergy.rebin;
 
+import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.util.ChunkCoordinates;
@@ -58,6 +59,14 @@ public class TestCommandInvoke {
     }
 
     @Test
+    public void testTypeInferenced(){
+        String[] candidate = {"false", "10", "100000"};
+        commandSet.processCommand(new TestCommandSender(), candidate);
+        assertEquals(Joiner.on(":").join(candidate), outContent.toString());
+    }
+
+
+    @Test
     public void testSpecialSender(){
         commandSet.processCommand(new TestCommandSender(), new String[0]);
         assertEquals(new TestCommandSender().testUniqueMethid(), outContent.toString());
@@ -92,6 +101,11 @@ public class TestCommandInvoke {
         @Command
         public void specialSender(TestCommandSender testCommandSender){
             System.out.print(testCommandSender.testUniqueMethid());
+        }
+
+        @Command("{bol} {number} {long}")
+        public void typeInferenced(@Arg("bol") boolean bol, @Arg("number") int number, @Arg("long") long longArg){
+            System.out.print(bol + ":" + number + ":" + longArg);
         }
     }
 
