@@ -6,6 +6,7 @@ import net.minecraft.command.ICommandSender;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.EnumChatFormatting;
+import org.apache.commons.lang3.ClassUtils;
 import ru.redenergy.rebin.annotation.Arg;
 import ru.redenergy.rebin.annotation.Command;
 import ru.redenergy.rebin.resolve.ResolveResult;
@@ -72,10 +73,33 @@ public abstract class CommandSet extends CommandBase {
                 if(arg == null){
                     return null; //unable to process it, most possibly because command is limited to sender type, e.g. Console tried to access in-game only command
                 }
-                parameters[i] = args.get(arg.value());
+                parameters[i] = extractValueByType(args.get(arg.value()), clazz);
             }
         }
         return parameters;
+    }
+
+    private Object extractValueByType(String value, Class clazz){
+        if(clazz.isAssignableFrom(String.class)){
+            return value;
+        } else if(clazz.isAssignableFrom(int.class)){
+            return Integer.parseInt(value);
+        } else if(clazz.isAssignableFrom(float.class)){
+            return Float.parseFloat(value);
+        } else if(clazz.isAssignableFrom(double.class)){
+            return Double.parseDouble(value);
+        } else if(clazz.isAssignableFrom(boolean.class)){
+            return parseComplicatedBoolean(value);
+        } else if(clazz.isAssignableFrom(long.class)){
+            return Long.parseLong(value);
+        }
+        return null;
+    }
+
+    private boolean parseComplicatedBoolean(String value){
+        if(value.equals("1") || value.equals("yes")) return true;
+        if(value.equals("0") || value.equals("no")) return false;
+        return Boolean.parseBoolean(value);
     }
 
     private Arg findArgumentAnnotation(Annotation[] annotations){
