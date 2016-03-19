@@ -1,12 +1,13 @@
 package ru.redenergy.rebin;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandHandler;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.ChatComponentText;
-import net.minecraft.util.EnumChatFormatting;
-import org.apache.commons.lang3.ClassUtils;
+import net.minecraft.util.text.TextComponentString;
+import net.minecraft.util.text.TextFormatting;
+import net.minecraftforge.fml.server.FMLServerHandler;
 import ru.redenergy.rebin.annotation.Arg;
 import ru.redenergy.rebin.annotation.Command;
 import ru.redenergy.rebin.resolve.ResolveResult;
@@ -23,9 +24,9 @@ import java.util.Map;
 public abstract class CommandSet extends CommandBase {
 
     //TODO: Read message from external file
-    public static String NO_PERMISSION_MSG = EnumChatFormatting.RED + "\u041d\u0435\u0434\u043e\u0441\u0442\u0430\u0442\u043e\u0447\u043d\u043e \u043f\u0440\u0430\u0432\u0021";
-    public static String UNABLE_TO_PROCESS = EnumChatFormatting.RED + "\u041d\u0435\u0432\u043e\u0437\u043c\u043e\u0436\u043d\u043e \u0432\u044b\u043f\u043e\u043b\u043d\u0438\u0442\u044c \u043a\u043e\u043c\u0430\u043d\u0434\u0443\u0021";
-    public static String EXCEPTION = EnumChatFormatting.RED + "\u0412\u043e \u0432\u0440\u0435\u043c\u044f \u0432\u044b\u043f\u043e\u043b\u043d\u0435\u043d\u0438\u044f \u043a\u043e\u043c\u0430\u043d\u0434\u044b \u043f\u0440\u043e\u0438\u0437\u043e\u0448\u043b\u0430 \u043e\u0448\u0438\u0431\u043a\u0430\u002e";
+    public static String NO_PERMISSION_MSG = TextFormatting.RED + "\u041d\u0435\u0434\u043e\u0441\u0442\u0430\u0442\u043e\u0447\u043d\u043e \u043f\u0440\u0430\u0432\u0021";
+    public static String UNABLE_TO_PROCESS = TextFormatting.RED + "\u041d\u0435\u0432\u043e\u0437\u043c\u043e\u0436\u043d\u043e \u0432\u044b\u043f\u043e\u043b\u043d\u0438\u0442\u044c \u043a\u043e\u043c\u0430\u043d\u0434\u0443\u0021";
+    public static String EXCEPTION = TextFormatting.RED + "\u0412\u043e \u0432\u0440\u0435\u043c\u044f \u0432\u044b\u043f\u043e\u043b\u043d\u0435\u043d\u0438\u044f \u043a\u043e\u043c\u0430\u043d\u0434\u044b \u043f\u0440\u043e\u0438\u0437\u043e\u0448\u043b\u0430 \u043e\u0448\u0438\u0431\u043a\u0430\u002e";
 
     private final TemplateResolver resolver = new TemplateResolver();
     private List<CommandConfiguration> configs = new ArrayList<>();
@@ -44,10 +45,10 @@ public abstract class CommandSet extends CommandBase {
             ResolveResult result = resolver.resolve(template, args);
             if(result.isSuccess()) {
                 Command command = configuration.getCommandMethod().getAnnotation(Command.class);
-                if(command.permission().equals("#") || sender instanceof MinecraftServer || Permissions.hasPermission(sender.getCommandSenderName(), command.permission())) {
+                if(command.permission().equals("#") || sender instanceof MinecraftServer || Permissions.hasPermission(sender.getName(), command.permission())) {
                     invokeCommand(configuration, result.getArguments(), sender, args);
                 } else {
-                    sender.addChatMessage(new ChatComponentText(NO_PERMISSION_MSG));
+                    sender.addChatMessage(new TextComponentString(NO_PERMISSION_MSG));
                 }
             }
         }
@@ -58,7 +59,7 @@ public abstract class CommandSet extends CommandBase {
         if (arguments != null) {
             command.getCommandMethod().invoke(this, commandArguments(command, sender, extracted));
         } else {
-            sender.addChatMessage(new ChatComponentText(UNABLE_TO_PROCESS));
+            sender.addChatMessage(new TextComponentString(UNABLE_TO_PROCESS));
         }
     }
 
@@ -112,20 +113,19 @@ public abstract class CommandSet extends CommandBase {
     }
 
 
-
     @Override
-    public void processCommand(ICommandSender sender, String[] args) {
+    public void execute(MinecraftServer server, ICommandSender sender, String[] args) {
         try {
             resolveAndInvoke(sender, args);
         } catch (Exception exception){
-            sender.addChatMessage(new ChatComponentText(EXCEPTION));
+            sender.addChatMessage(new TextComponentString(EXCEPTION));
             exception.printStackTrace();
         }
     }
 
     public static void register(CommandSet set){
         set.collectCommands();
-        ((CommandHandler)MinecraftServer.getServer().getCommandManager()).registerCommand(set);
+        ((CommandHandler) FMLServerHandler.instance().getServer().getCommandManager()).registerCommand(set);
     }
 
 }

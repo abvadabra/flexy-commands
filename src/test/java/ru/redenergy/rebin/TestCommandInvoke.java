@@ -2,23 +2,26 @@ package ru.redenergy.rebin;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
+import net.minecraft.command.CommandResultStats;
 import net.minecraft.command.ICommandSender;
-import net.minecraft.util.ChunkCoordinates;
-import net.minecraft.util.IChatComponent;
+import net.minecraft.entity.Entity;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.TextComponentString;
 import net.minecraft.world.World;
 import org.apache.commons.io.output.ByteArrayOutputStream;
-import org.apache.commons.lang3.StringUtils;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.lwjgl.Sys;
 import ru.redenergy.rebin.annotation.Arg;
 import ru.redenergy.rebin.annotation.Command;
 
 import java.io.PrintStream;
 import java.util.Arrays;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 public class TestCommandInvoke {
 
     static CommandSet commandSet = new TestCommandSet();
@@ -36,7 +39,7 @@ public class TestCommandInvoke {
 
     @Test
     public void testEmptyInvoke(){
-        commandSet.processCommand(new TestCommandSender(), new String[]{"empty"});
+        commandSet.execute(null, new TestCommandSender(), new String[]{"empty"});
         assertEquals("empty", outContent.toString());
     }
 
@@ -44,14 +47,14 @@ public class TestCommandInvoke {
     public void testParametrizedInvoke(){
         String arg1 = "bob";
         String arg2 = "admin";
-        commandSet.processCommand(new TestCommandSender(), new String[]{"add", arg1, "to", arg2});
+        commandSet.execute(null, new TestCommandSender(), new String[]{"add", arg1, "to", arg2});
         assertEquals("test" + ":" + arg1 + ":" + arg2, outContent.toString());
     }
 
     @Test
     public void testVarargInvoke(){
         String message = "Some funny rabbit in the sky";
-        commandSet.processCommand(new TestCommandSender(), ImmutableList.builder()
+        commandSet.execute(null, new TestCommandSender(), ImmutableList.builder()
                 .add("add", "message")
                 .addAll(Arrays.asList(message.split(" ")))
                 .build().toArray(new String[8]));
@@ -61,14 +64,14 @@ public class TestCommandInvoke {
     @Test
     public void testTypeInferenced(){
         String[] candidate = {"false", "10", "100000"};
-        commandSet.processCommand(new TestCommandSender(), candidate);
+        commandSet.execute(null, new TestCommandSender(), candidate);
         assertEquals(Joiner.on(":").join(candidate), outContent.toString());
     }
 
 
     @Test
     public void testSpecialSender(){
-        commandSet.processCommand(new TestCommandSender(), new String[0]);
+        commandSet.execute(null, new TestCommandSender(), new String[0]);
         assertEquals(new TestCommandSender().testUniqueMethid(), outContent.toString());
     }
 
@@ -85,7 +88,7 @@ public class TestCommandInvoke {
 
         @Command("add {user} to {group}")
         public void testCommandParameterized(@Arg("group") String group, @Arg("user") String user, ICommandSender sender){
-            System.out.print(sender.getCommandSenderName() + ":" + user + ":" + group);
+            System.out.print(sender.getName() + ":" + user + ":" + group);
         }
 
         @Command("empty")
@@ -116,32 +119,54 @@ public class TestCommandInvoke {
         }
 
         @Override
-        public String getCommandSenderName() {
+        public String getName() {
             return "test";
         }
 
         @Override
-        public IChatComponent func_145748_c_() {
-            return null;
+        public ITextComponent getDisplayName() {
+            return new TextComponentString(getName());
         }
 
         @Override
-        public void addChatMessage(IChatComponent p_145747_1_) {
-            System.out.println(p_145747_1_.toString());
-        }
+        public void addChatMessage(ITextComponent component) {}
 
         @Override
-        public boolean canCommandSenderUseCommand(int p_70003_1_, String p_70003_2_) {
+        public boolean canCommandSenderUseCommand(int permLevel, String commandName) {
             return true;
         }
 
         @Override
-        public ChunkCoordinates getPlayerCoordinates() {
+        public BlockPos getPosition() {
+            return null;
+        }
+
+        @Override
+        public Vec3d getPositionVector() {
             return null;
         }
 
         @Override
         public World getEntityWorld() {
+            return null;
+        }
+
+        @Override
+        public Entity getCommandSenderEntity() {
+            return null;
+        }
+
+        @Override
+        public boolean sendCommandFeedback() {
+            return false;
+        }
+
+        @Override
+        public void setCommandStat(CommandResultStats.Type type, int amount) {
+        }
+
+        @Override
+        public MinecraftServer getServer() {
             return null;
         }
     }
