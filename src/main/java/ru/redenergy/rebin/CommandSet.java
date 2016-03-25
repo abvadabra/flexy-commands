@@ -9,6 +9,7 @@ import net.minecraft.util.text.TextFormatting;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import ru.redenergy.rebin.annotation.Arg;
 import ru.redenergy.rebin.annotation.Command;
+import ru.redenergy.rebin.annotation.Flag;
 import ru.redenergy.rebin.resolve.ResolveResult;
 import ru.redenergy.rebin.resolve.TemplateResolver;
 import ru.skymine.permissions.Permissions;
@@ -34,7 +35,16 @@ public abstract class CommandSet extends CommandBase {
         Method[] methods = this.getClass().getMethods();
         for(Method m : methods) {
             Command command = m.getAnnotation(Command.class);
-            if(command != null) configs.add(new CommandConfiguration(m, m.getParameterTypes(), m.getParameterAnnotations()));
+            if(command != null) {
+                Class[] parameters = m.getParameterTypes();
+                Annotation[][] commandAnnotations = m.getParameterAnnotations();
+                List<String> flags = new ArrayList<>();
+                for(Annotation[] annotations: commandAnnotations)
+                    for(Annotation annotation: annotations)
+                        if(annotation instanceof Flag)
+                            flags.add(((Flag) annotation).value());
+                configs.add(new CommandConfiguration(m, parameters, commandAnnotations, flags));
+            }
         }
     }
 
@@ -42,12 +52,12 @@ public abstract class CommandSet extends CommandBase {
         boolean executed = false;
         for(CommandConfiguration configuration : configs){
             String template = configuration.getCommandMethod().getAnnotation(Command.class).value();
-            ResolveResult result = resolver.resolve(template, args);
+            ResolveResult result = resolver.resolve(template, args, configuration.getAvailableFlags());
             if(result.isSuccess()) {
                 executed = true;
                 Command command = configuration.getCommandMethod().getAnnotation(Command.class);
                 if(command.permission().equals("#") || sender instanceof MinecraftServer || Permissions.hasPermission(sender.getName(), command.permission())) {
-                    invokeCommand(configuration, result.getArguments(), sender, args);
+                    invokeCommand(configuration, result.getArguments(), sender, result.getFoundFlags());
                 } else {
                     sender.addChatMessage(new TextComponentString(NO_PERMISSION_MSG));
                 }
@@ -57,16 +67,16 @@ public abstract class CommandSet extends CommandBase {
             sender.addChatMessage(new TextComponentString(UNABLE_TO_PROCESS));
     }
     
-    private void invokeCommand(CommandConfiguration command, Map<String, String> extracted, ICommandSender sender, String[] args) throws InvocationTargetException, IllegalAccessException {
-        Object[] arguments = commandArguments(command, sender, extracted);
+    private void invokeCommand(CommandConfiguration command, Map<String, String> extracted, ICommandSender sender, List<String> foundFlags) throws InvocationTargetException, IllegalAccessException {
+        Object[] arguments = commandArguments(command, sender, extracted, foundFlags);
         if (arguments != null) {
-            command.getCommandMethod().invoke(this, commandArguments(command, sender, extracted));
+            command.getCommandMethod().invoke(this, arguments);
         } else {
             sender.addChatMessage(new TextComponentString(UNABLE_TO_PROCESS));
         }
     }
 
-    private Object[] commandArguments(CommandConfiguration command, ICommandSender sender, Map<String, String> args){
+    private Object[] commandArguments(CommandConfiguration command, ICommandSender sender, Map<String, String> args, List<String> foundFlags){
         Object[] parameters = new Object[command.getParameters().length];
         for(int i = 0; i < command.getParameters().length; i++){
             Class clazz = command.getParameters()[i];
@@ -74,10 +84,16 @@ public abstract class CommandSet extends CommandBase {
                 parameters[i] = sender;
             } else {
                 Arg arg = findArgumentAnnotation(command.getAnnotations()[i]); // <|*|>
-                if(arg == null){
-                    return null; //unable to process it, most possibly because command is limited to sender type, e.g. Console tried to access in-game only command
+                if(arg != null) {
+                    parameters[i] = extractValueByType(args.get(arg.value()), clazz);
+                    continue;
                 }
-                parameters[i] = extractValueByType(args.get(arg.value()), clazz);
+                Flag flag = findFlagAnnotation(command.getAnnotations()[i]);
+                if(flag != null && clazz.isAssignableFrom(boolean.class)){
+                    parameters[i] = foundFlags.contains(flag.value());
+                    continue;
+                }
+                return null; //unable to process it, most possibly because command is limited to sender type, e.g. Console tried to access in-game only command
             }
         }
         return parameters;
@@ -110,6 +126,15 @@ public abstract class CommandSet extends CommandBase {
         for(Annotation annotation : annotations){
             if(annotation.annotationType().isAssignableFrom(Arg.class)){
                 return (Arg) annotation;
+            }
+        }
+        return null;
+    }
+
+    private Flag findFlagAnnotation(Annotation[] annotations){
+        for(Annotation annotation : annotations){
+            if(annotation.annotationType().isAssignableFrom(Flag.class)){
+                return (Flag) annotation;
             }
         }
         return null;

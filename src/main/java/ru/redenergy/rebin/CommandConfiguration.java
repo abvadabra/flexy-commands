@@ -2,6 +2,8 @@ package ru.redenergy.rebin;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Contains information about one command entry in command set
@@ -23,10 +25,17 @@ public class CommandConfiguration {
      */
     private final Annotation[][] annotations;
 
+    private final List<String> availableFlags;
+
     public CommandConfiguration(Method commandMethod, Class[] parameters, Annotation[][] annotations) {
+        this(commandMethod, parameters, annotations, new ArrayList<String>());
+    }
+
+    public CommandConfiguration(Method commandMethod, Class[] parameters, Annotation[][] annotations, List<String> availableFlags) {
         this.commandMethod = commandMethod;
         this.parameters = parameters;
         this.annotations = annotations;
+        this.availableFlags = availableFlags;
     }
 
     public Method getCommandMethod() {
@@ -39,5 +48,9 @@ public class CommandConfiguration {
 
     public Annotation[][] getAnnotations() {
         return annotations;
+    }
+
+    public List<String> getAvailableFlags() {
+        return availableFlags;
     }
 }
