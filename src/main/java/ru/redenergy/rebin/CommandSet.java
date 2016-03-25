@@ -1,13 +1,12 @@
 package ru.redenergy.rebin;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandHandler;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextFormatting;
-import net.minecraftforge.fml.server.FMLServerHandler;
+import net.minecraftforge.fml.common.FMLCommonHandler;
 import ru.redenergy.rebin.annotation.Arg;
 import ru.redenergy.rebin.annotation.Command;
 import ru.redenergy.rebin.resolve.ResolveResult;
@@ -40,10 +39,12 @@ public abstract class CommandSet extends CommandBase {
     }
 
     private void resolveAndInvoke(ICommandSender sender, String[] args) throws InvocationTargetException, IllegalAccessException {
+        boolean executed = false;
         for(CommandConfiguration configuration : configs){
             String template = configuration.getCommandMethod().getAnnotation(Command.class).value();
             ResolveResult result = resolver.resolve(template, args);
             if(result.isSuccess()) {
+                executed = true;
                 Command command = configuration.getCommandMethod().getAnnotation(Command.class);
                 if(command.permission().equals("#") || sender instanceof MinecraftServer || Permissions.hasPermission(sender.getName(), command.permission())) {
                     invokeCommand(configuration, result.getArguments(), sender, args);
@@ -52,6 +53,8 @@ public abstract class CommandSet extends CommandBase {
                 }
             }
         }
+        if(!executed)
+            sender.addChatMessage(new TextComponentString(UNABLE_TO_PROCESS));
     }
     
     private void invokeCommand(CommandConfiguration command, Map<String, String> extracted, ICommandSender sender, String[] args) throws InvocationTargetException, IllegalAccessException {
@@ -125,7 +128,7 @@ public abstract class CommandSet extends CommandBase {
 
     public static void register(CommandSet set){
         set.collectCommands();
-        ((CommandHandler) FMLServerHandler.instance().getServer().getCommandManager()).registerCommand(set);
+        ((CommandHandler) FMLCommonHandler.instance().getMinecraftServerInstance().getCommandManager()).registerCommand(set);
     }
 
 }
