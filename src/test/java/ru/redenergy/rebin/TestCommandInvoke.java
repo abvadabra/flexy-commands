@@ -17,6 +17,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import ru.redenergy.rebin.annotation.Arg;
 import ru.redenergy.rebin.annotation.Command;
+import ru.redenergy.rebin.annotation.Flag;
 
 import java.io.PrintStream;
 import java.util.Arrays;
@@ -75,6 +76,12 @@ public class TestCommandInvoke {
         assertEquals(new TestCommandSender().testUniqueMethid(), outContent.toString());
     }
 
+    @Test
+    public void testFlagged(){
+        commandSet.execute(null, new TestCommandSender(), new String[]{"action", "-a", "player", "123", "123", "123"});
+        assertEquals("ACTIONPLAYER", outContent.toString());
+    }
+
     private static class TestCommandSet extends CommandSet {
         @Override
         public String getCommandName() {
@@ -109,6 +116,15 @@ public class TestCommandInvoke {
         @Command("{bol} {number} {long}")
         public void typeInferenced(@Arg("bol") boolean bol, @Arg("number") int number, @Arg("long") long longArg){
             System.out.print(bol + ":" + number + ":" + longArg);
+        }
+
+        @Command("{action} {player} {something} {garbage} {bla}")
+        public void commandFlagged(@Arg("action") String action, @Arg("player") String player, @Flag("-a") boolean big){
+            if(big){
+                System.out.print(action.toUpperCase() + player.toUpperCase());
+            } else {
+                System.out.print(action.toLowerCase() + player.toLowerCase());
+            }
         }
     }
 

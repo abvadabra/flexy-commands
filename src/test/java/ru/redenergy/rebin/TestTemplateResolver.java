@@ -4,6 +4,7 @@ import org.junit.Test;
 import ru.redenergy.rebin.resolve.ResolveResult;
 import ru.redenergy.rebin.resolve.TemplateResolver;
 
+import java.util.Arrays;
 import java.util.Map;
 
 import static org.junit.Assert.*;
@@ -23,6 +24,13 @@ public class TestTemplateResolver {
     public void testSimpleInvalid(){
         String template = "add testEmptyCommand";
         String[] candidate = {"get", "nothing"};
+        assertFalse(resolver.resolve(template, candidate).isSuccess());
+    }
+
+    @Test
+    public void testParametrizedInvalid(){
+        String template = "do {something} bad";
+        String[] candidate = {"do", "bla", "bla"};
         assertFalse(resolver.resolve(template, candidate).isSuccess());
     }
 
@@ -53,5 +61,15 @@ public class TestTemplateResolver {
         assertTrue(result.isSuccess());
         assertEquals("Player", result.getArguments().get("target"));
         assertEquals("VAL=1 VAL=2 VAL=3 VAL=4", result.getArguments().get("values"));
+    }
+
+    @Test
+    public void testFlagParse(){
+        String template = "do something";
+        String[] candidate = {"do", "-a", "something", "-b"};
+        ResolveResult result = resolver.resolve(template, candidate, Arrays.asList("-a", "-b"));
+
+        assertTrue(result.isSuccess());
+        assertEquals(Arrays.asList("-a", "-b"), result.getFoundFlags());
     }
 }
