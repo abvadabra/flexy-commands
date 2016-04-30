@@ -2,24 +2,11 @@ package ru.redenergy.flexy;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
-import net.minecraft.command.CommandResultStats;
-import net.minecraft.command.ICommandSender;
-import net.minecraft.entity.Entity;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.TextComponentBase;
-import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextComponentTranslation;
-import net.minecraft.world.World;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
-import ru.redenergy.flexy.annotation.Arg;
-import ru.redenergy.flexy.annotation.Command;
-import ru.redenergy.flexy.annotation.Flag;
+import ru.redenergy.flexy.cmds.TestCommandInvokeCmds;
 
 import java.io.PrintStream;
 import java.util.Arrays;
@@ -29,7 +16,7 @@ import static org.junit.Assert.assertSame;
 
 public class TestCommandInvoke {
 
-    static FlexyCommand commandSet = new TestCommandSet();
+    static FlexyCommand commandSet = new TestCommandInvokeCmds();
     private final ByteArrayOutputStream outContent = new ByteArrayOutputStream();
 
     @Before
@@ -88,115 +75,4 @@ public class TestCommandInvoke {
         assertEquals(((TextComponentTranslation)sender.lastMessage).getKey(), "commands.generic.notFound");
     }
 
-    private static class TestCommandSet extends FlexyCommand {
-        @Override
-        public String getCommandName() {
-            return "test";
-        }
-
-        @Override
-        public String getCommandUsage(ICommandSender p_71518_1_) {
-            return "/test <args>";
-        }
-
-        @Command(value = "disabled", disabled = true)
-        public void disabledCommand(){}
-
-        @Command("add {user} to {group}")
-        public void testCommandParameterized(@Arg("group") String group, @Arg("user") String user, ICommandSender sender){
-            System.out.print(sender.getName() + ":" + user + ":" + group);
-        }
-
-        @Command("empty")
-        public void testEmptyCommand(){
-            System.out.print("empty");
-        }
-
-        @Command("add message {*message}")
-        public void addMessage(@Arg("message") String message){
-            System.out.print(message);
-        }
-
-        @Command
-        public void specialSender(TestCommandSender testCommandSender){
-            System.out.print(testCommandSender.testUniqueMethid());
-        }
-
-        @Command("{bol} {number} {long}")
-        public void typeInferenced(@Arg("bol") boolean bol, @Arg("number") int number, @Arg("long") long longArg){
-            System.out.print(bol + ":" + number + ":" + longArg);
-        }
-
-        @Command("{action} {player} {something} {garbage} {bla}")
-        public void commandFlagged(@Arg("action") String action, @Arg("player") String player, @Flag("-a") boolean big){
-            if(big){
-                System.out.print(action.toUpperCase() + player.toUpperCase());
-            } else {
-                System.out.print(action.toLowerCase() + player.toLowerCase());
-            }
-        }
-    }
-
-    private static class TestCommandSender implements ICommandSender{
-
-        public ITextComponent lastMessage;
-
-        public String testUniqueMethid(){
-            return "I am Test Sender";
-        }
-
-        @Override
-        public String getName() {
-            return "test";
-        }
-
-        @Override
-        public ITextComponent getDisplayName() {
-            return new TextComponentString(getName());
-        }
-
-        @Override
-        public void addChatMessage(ITextComponent component) {
-            lastMessage = component;
-        }
-
-        @Override
-        public boolean canCommandSenderUseCommand(int permLevel, String commandName) {
-            return true;
-        }
-
-        @Override
-        public BlockPos getPosition() {
-            return null;
-        }
-
-        @Override
-        public Vec3d getPositionVector() {
-            return null;
-        }
-
-        @Override
-        public World getEntityWorld() {
-            return null;
-        }
-
-        @Override
-        public Entity getCommandSenderEntity() {
-            return null;
-        }
-
-        @Override
-        public boolean sendCommandFeedback() {
-            return false;
-        }
-
-        @Override
-        public void setCommandStat(CommandResultStats.Type type, int amount) {
-        }
-
-        @Override
-        public MinecraftServer getServer() {
-            return null;
-        }
-    }
 }
