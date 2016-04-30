@@ -1,5 +1,6 @@
 package ru.redenergy.flexy;
 
+import com.google.common.base.Optional;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.MinecraftServer;
@@ -9,6 +10,7 @@ import net.minecraft.util.text.TextFormatting;
 import ru.redenergy.flexy.annotation.Arg;
 import ru.redenergy.flexy.annotation.Command;
 import ru.redenergy.flexy.annotation.Flag;
+import ru.redenergy.flexy.annotation.Par;
 import ru.redenergy.flexy.permission.IProvider;
 import ru.redenergy.flexy.resolve.ResolveResult;
 import ru.redenergy.flexy.resolve.TemplateResolver;
@@ -53,14 +55,17 @@ public class CommandBackend {
         Command command = method.getAnnotation(Command.class);
         if(command.disabled())
             return;
-        Class[] parameters = method.getParameterTypes();
+        Class[] commandParameters = method.getParameterTypes();
         Annotation[][] commandAnnotations = method.getParameterAnnotations();
         List<String> flags = new ArrayList<>();
+        List<String> parameters = new ArrayList<>();
         for(Annotation[] annotations: commandAnnotations)
             for(Annotation annotation: annotations)
                 if(annotation instanceof Flag)
                     flags.add(((Flag) annotation).value());
-        configs.add(new CommandConfiguration(method, parameters, commandAnnotations, flags));
+                else if(annotation instanceof Par)
+                    parameters.add(((Par) annotation).value());
+        configs.add(new CommandConfiguration(method, commandParameters, commandAnnotations, flags, parameters));
     }
 
     public void resolveExecute(ICommandSender sender, String[] args) throws InvocationTargetException, IllegalAccessException {
@@ -77,7 +82,7 @@ public class CommandBackend {
 
     private boolean resolveExecuteCommand(CommandConfiguration config, ICommandSender sender, String[] args) throws InvocationTargetException, IllegalAccessException {
         String template = config.getCommandMethod().getAnnotation(Command.class).value();
-        ResolveResult result = resolver.resolve(template, args, config.getAvailableFlags());
+        ResolveResult result = resolver.resolve(template, args, config.getAvailableFlags(), config.getAvailableParameters());
         if (result.isSuccess())
             executeCommand(config, sender, result);
         return result.isSuccess();
@@ -112,9 +117,9 @@ public class CommandBackend {
     }
 
     private Object[] getArguments(CommandConfiguration command, ICommandSender sender, ResolveResult result){
-        Object[] parameters = new Object[command.getParameters().length];
-        for(int i = 0; i < command.getParameters().length; i++){
-            Object value = getAppropriateValue(command.getParameters()[i], command.getAnnotations()[i], sender, result);
+        Object[] parameters = new Object[command.getCommandParameters().length];
+        for(int i = 0; i < command.getCommandParameters().length; i++){
+            Object value = getAppropriateValue(command.getCommandParameters()[i], command.getAnnotations()[i], sender, result);
             if(value == null)
                 return null;
             else
@@ -135,12 +140,20 @@ public class CommandBackend {
             if (flag != null && clazz.isAssignableFrom(boolean.class)) {
                 return result.getFoundFlags().contains(flag.value());
             }
+            Par par = getParameter(annotations);
+            if(par != null){
+                return getTypeValue(result.getParameters().get(par.value()), clazz);
+            }
             return null;
         }
     }
 
     private Object getTypeValue(String value, Class clazz){
-        if(clazz == String.class){
+        if(clazz.isAssignableFrom(Optional.class)){
+            return Optional.fromNullable(value);
+        } else if(value == null){
+            return null;
+        } else if(clazz == String.class){
             return value;
         } else if(clazz == int.class){
             return Integer.parseInt(value);
@@ -175,5 +188,20 @@ public class CommandBackend {
             if(annotation.annotationType().isAssignableFrom(Flag.class))
                 return (Flag) annotation;
         return null;
+    }
+
+    private Par getParameter(Annotation[] annotations){
+        for (Annotation annotation : annotations)
+            if(annotation.annotationType().isAssignableFrom(Par.class))
+                return (Par) annotation;
+        return null;
+    }
+
+    public static IProvider getProvider() {
+        return provider;
+    }
+
+    public static void setProvider(IProvider provider) {
+        CommandBackend.provider = provider;
     }
 }

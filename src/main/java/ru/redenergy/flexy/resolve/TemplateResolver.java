@@ -13,7 +13,7 @@ public class TemplateResolver {
      * Matches template with given argument lists and extracts values from args according to template
      * @param template - template of the command, all arguments must be putted between brackets e.g. "add {user}"
      * @param args - arguments received from user
-     * @return Returns ResolveResult in which #isSuccess() returns wheter or not templates matches arguments and #getParameters() return map of values extracted from arguments
+     * @return Returns ResolveResult in which #isSuccess() returns wheter or not templates matches arguments and #getCommandParameters() return map of values extracted from arguments
      */
     public ResolveResult resolve(String template, String[] args){
         return resolve(template, args, Collections.<String>emptyList());
@@ -24,7 +24,7 @@ public class TemplateResolver {
      * @param template - template of the command, all arguments must be putted between brackets e.g. "add {user}"
      * @param args - arguments received from user
      * @param flags - flags which can be met in args and wount be recognized as part of command
-     * @return Returns ResolveResult in which #isSuccess() returns wheter or not templates matches arguments and #getParameters() return map of values extracted from arguments
+     * @return Returns ResolveResult in which #isSuccess() returns wheter or not templates matches arguments and #getCommandParameters() return map of values extracted from arguments
      */
     public ResolveResult resolve(String template, String[] args, List<String> flags){
         return resolve(template, args, flags, Collections.<String>emptyList());

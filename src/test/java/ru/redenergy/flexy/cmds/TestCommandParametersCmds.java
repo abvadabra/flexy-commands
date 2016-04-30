@@ -24,6 +24,6 @@ public class TestCommandParametersCmds extends FlexyCommand {
 
     @Command("optional")
     public void optonalPar(@Par("--p") Optional<Integer> val){
-        System.out.print("Optional val:" + val);
+        System.out.print("Optional val:" + val.get());
     }
 }
