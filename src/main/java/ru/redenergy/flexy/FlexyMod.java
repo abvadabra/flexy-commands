@@ -14,9 +14,9 @@ public class FlexyMod {
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event){
         if(Loader.isModLoaded("sponge"))
-            FlexyCommand.setProvider(new IProvider.SpongeProvider());
+            CommandBackend.setProvider(new IProvider.SpongeProvider());
         else if(Loader.isModLoaded("forge-vault"))
-            FlexyCommand.setProvider(new IProvider.BukkitProvider());
+            CommandBackend.setProvider(new IProvider.BukkitProvider());
     }
 
 }

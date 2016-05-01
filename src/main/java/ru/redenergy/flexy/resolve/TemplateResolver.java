@@ -13,10 +13,47 @@ public class TemplateResolver {
      * Matches template with given argument lists and extracts values from args according to template
      * @param template - template of the command, all arguments must be putted between brackets e.g. "add {user}"
      * @param args - arguments received from user
+     * @return Returns ResolveResult in which #isSuccess() returns wheter or not templates matches arguments and #getCommandParameters() return map of values extracted from arguments
+     */
+    public ResolveResult resolve(String template, String[] args){
+        return resolve(template, args, Collections.<String>emptyList());
+    }
+
+    /**
+     * Matches template with given argument lists and extracts values from args according to template
+     * @param template - template of the command, all arguments must be putted between brackets e.g. "add {user}"
+     * @param args - arguments received from user
      * @param flags - flags which can be met in args and wount be recognized as part of command
-     * @return Returns ResolveResult in which #isSuccess() returns wheter or not templates matches arguments and #getParameters() return map of values extracted from arguments
+     * @return Returns ResolveResult in which #isSuccess() returns wheter or not templates matches arguments and #getCommandParameters() return map of values extracted from arguments
      */
     public ResolveResult resolve(String template, String[] args, List<String> flags){
+        return resolve(template, args, flags, Collections.<String>emptyList());
+    }
+
+    /**
+     * Matches template with given argument lists and extracts values from args according to template
+     * @param template - template of the command, all arguments must be putted between brackets e.g. "add {user}"
+     * @param args - arguments received from user
+     * @param flags - flags which can be met in args and wount be recognized as part of command
+     * @param parameters - possible parameters which can be met in args
+     * @return Returns ResolveResult in which #isSuccess() returns wheter or not templates matches arguments and #getArguments() return map of values extracted from arguments
+     */
+    public ResolveResult resolve(String template, String[] args, List<String> flags, List<String> parameters){
+        Map<String, String> foundParameters = new HashMap<>();
+        if(!parameters.isEmpty()){
+            List<String> listArgs = new ArrayList<>(Arrays.asList(args));
+            for(String par: parameters) {
+                int parIndex = listArgs.indexOf(par);
+                if (parIndex >= 0 && parIndex + 1 < listArgs.size()){
+                    String val = listArgs.remove(parIndex + 1);
+                    listArgs.remove(parIndex);
+                    foundParameters.put(par, val);
+                } else {
+                    return new ResolveResult(false);
+                }
+            }
+            args = listArgs.toArray(new String[listArgs.size()]);
+        }
         List<String> foundFlags = new ArrayList<>();
         if(!flags.isEmpty()) {
             List<String> listArgs = new ArrayList<>(Arrays.asList(args));
@@ -29,7 +66,7 @@ public class TemplateResolver {
             args = listArgs.toArray(new String[listArgs.size()]);
         }
 
-        if(template.isEmpty() && args.length == 0) return new ResolveResult(true, new HashMap<String, String>(), foundFlags);
+        if(template.isEmpty() && args.length == 0) return new ResolveResult(true, new HashMap<String, String>(), foundParameters, foundFlags);
         String[] pattern = template.split(" ");
         boolean containsVararg = pattern[pattern.length - 1].matches("\\{\\*.*\\}");
         if((pattern.length != args.length && !containsVararg) || (containsVararg && pattern.length > args.length))
@@ -53,16 +90,6 @@ public class TemplateResolver {
             if(!origin.equalsIgnoreCase(application)) return new ResolveResult(false);
         }
 
-        return new ResolveResult(true, arguments, foundFlags);
-    }
-
-    /**
-     * Matches template with given argument lists and extracts values from args according to template
-     * @param template - template of the command, all arguments must be putted between brackets e.g. "add {user}"
-     * @param args - arguments received from user
-     * @return Returns ResolveResult in which #isSuccess() returns wheter or not templates matches arguments and #getParameters() return map of values extracted from arguments
-     */
-    public ResolveResult resolve(String template, String[] args){
-        return resolve(template, args, Collections.<String>emptyList());
+        return new ResolveResult(true, arguments, foundParameters, foundFlags);
     }
 }

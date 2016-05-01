@@ -16,34 +16,41 @@ public class CommandConfiguration {
     private final Method commandMethod;
 
     /**
-     * Types of parameters in command
+     * Types of commandParameters in command
      */
-    private final Class[] parameters;
+    private final Class[] commandParameters;
 
     /**
-     * Annotation for each type in parameters
+     * Annotation for each type in commandParameters
      */
     private final Annotation[][] annotations;
 
     private final List<String> availableFlags;
 
-    public CommandConfiguration(Method commandMethod, Class[] parameters, Annotation[][] annotations) {
-        this(commandMethod, parameters, annotations, new ArrayList<String>());
+    private final List<String> availableParameters;
+
+    public CommandConfiguration(Method commandMethod, Class[] commandParameters, Annotation[][] annotations) {
+        this(commandMethod, commandParameters, annotations, new ArrayList<String>());
     }
 
-    public CommandConfiguration(Method commandMethod, Class[] parameters, Annotation[][] annotations, List<String> availableFlags) {
+    public CommandConfiguration(Method commandMethod, Class[] commandParameters, Annotation[][] annotations, List<String> availableFlags) {
+        this(commandMethod, commandParameters, annotations, availableFlags, new ArrayList<String>());
+    }
+
+    public CommandConfiguration(Method commandMethod, Class[] commandParameters, Annotation[][] annotations, List<String> availableFlags, List<String> availablePars) {
         this.commandMethod = commandMethod;
-        this.parameters = parameters;
+        this.commandParameters = commandParameters;
         this.annotations = annotations;
         this.availableFlags = availableFlags;
+        this.availableParameters = availablePars;
     }
 
     public Method getCommandMethod() {
         return commandMethod;
     }
 
-    public Class[] getParameters() {
-        return parameters;
+    public Class[] getCommandParameters() {
+        return commandParameters;
     }
 
     public Annotation[][] getAnnotations() {
@@ -52,5 +59,9 @@ public class CommandConfiguration {
 
     public List<String> getAvailableFlags() {
         return availableFlags;
+    }
+
+    public List<String> getAvailableParameters() {
+        return availableParameters;
     }
 }

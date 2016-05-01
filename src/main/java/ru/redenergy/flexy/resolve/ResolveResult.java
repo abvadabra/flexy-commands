@@ -22,6 +22,8 @@ public class ResolveResult {
 
     private final List<String> foundFlags;
 
+    private final Map<String, String> parameters;
+
     /**
      * Arguments value will be emtpy map
      */
@@ -34,8 +36,13 @@ public class ResolveResult {
     }
 
     public ResolveResult(boolean success, Map<String, String> arguments, List<String> foundFlags) {
+        this(success, arguments, new HashMap<String, String>(), foundFlags);
+    }
+
+    public ResolveResult(boolean success, Map<String, String> arguments, Map<String, String> parameters, List<String> foundFlags){
         this.success = success;
         this.arguments = arguments;
+        this.parameters = parameters;
         this.foundFlags = foundFlags;
     }
 
@@ -49,5 +56,9 @@ public class ResolveResult {
 
     public Map<String, String> getArguments() {
         return arguments;
+    }
+
+    public Map<String, String> getParameters() {
+        return parameters;
     }
 }

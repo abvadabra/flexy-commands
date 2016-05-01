@@ -5,6 +5,7 @@ import ru.redenergy.flexy.resolve.ResolveResult;
 import ru.redenergy.flexy.resolve.TemplateResolver;
 
 import java.util.Arrays;
+import java.util.Collections;
 
 import static org.junit.Assert.*;
 
@@ -70,5 +71,41 @@ public class TestTemplateResolver {
 
         assertTrue(result.isSuccess());
         assertEquals(Arrays.asList("-a", "-b"), result.getFoundFlags());
+    }
+
+    @Test
+    public void testParametersOnly(){
+        String template = "";
+        String val = "42";
+        String[] candidate = {"--p", val};
+        ResolveResult result = resolver.resolve(template, candidate, Collections.<String>emptyList(), Arrays.asList("--p"));
+
+        assertTrue(result.isSuccess());
+        assertEquals(val, result.getParameters().get("--p"));
+    }
+
+    @Test
+    public void testParametersMixed(){
+        String template = "something {arg}";
+        String val = "42";
+        String[] candidate = {"something", "argument", "--p", val};
+        ResolveResult result = resolver.resolve(template, candidate, Collections.<String>emptyList(), Arrays.asList("--p"));
+
+        assertTrue(result.isSuccess());
+        assertEquals(val, result.getParameters().get("--p"));
+        assertEquals("argument", result.getArguments().get("arg"));
+    }
+
+    @Test
+    public void testParamatersMultiple(){
+        String template = "";
+        String valFirst = "42";
+        String valSecond = "3.14";
+        String[] candidate = {"--p", valFirst, "--a", valSecond};
+        ResolveResult result = resolver.resolve(template, candidate, Collections.<String>emptyList(), Arrays.asList("--p", "--a"));
+
+        assertTrue(result.isSuccess());
+        assertEquals(valFirst, result.getParameters().get("--p"));
+        assertEquals(valSecond, result.getParameters().get("--a"));
     }
 }
