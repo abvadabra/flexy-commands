@@ -44,10 +44,12 @@ public class TemplateResolver {
             List<String> listArgs = new ArrayList<>(Arrays.asList(args));
             for(String par: parameters) {
                 int parIndex = listArgs.indexOf(par);
-                if (parIndex >= 0){
+                if (parIndex >= 0 && parIndex + 1 < listArgs.size()){
                     String val = listArgs.remove(parIndex + 1);
                     listArgs.remove(parIndex);
                     foundParameters.put(par, val);
+                } else {
+                    return new ResolveResult(false);
                 }
             }
             args = listArgs.toArray(new String[listArgs.size()]);
