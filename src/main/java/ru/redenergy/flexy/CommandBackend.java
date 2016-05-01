@@ -128,18 +128,16 @@ public class CommandBackend {
         return parameters;
     }
 
-    private Object getAppropriateValue(Class clazz, Annotation[] annotations, ICommandSender sender, ResolveResult result){
+    private Object getAppropriateValue(Class<?> clazz, Annotation[] annotations, ICommandSender sender, ResolveResult result){
         if(clazz.isAssignableFrom(sender.getClass())){
             return sender;
         } else {
             Arg arg = getArgument(annotations);
-            if (arg != null) {
+            if (arg != null)
                 return getTypeValue(result.getArguments().get(arg.value()), clazz);
-            }
             Flag flag = getFlag(annotations);
-            if (flag != null && clazz.isAssignableFrom(boolean.class)) {
+            if (flag != null && clazz.isAssignableFrom(boolean.class))
                 return result.getFoundFlags().contains(flag.value());
-            }
             Par par = getParameter(annotations);
             if(par != null){
                 if(clazz.isAssignableFrom(Optional.class)){
@@ -152,24 +150,23 @@ public class CommandBackend {
         }
     }
 
-    private Object getTypeValue(String value, Class clazz){
-        if(clazz.isAssignableFrom(Optional.class)){
+    private Object getTypeValue(String value, Class<?> clazz){
+        if(clazz.isAssignableFrom(Optional.class))
             return Optional.fromNullable(value);
-        } else if(value == null){
+        else if(value == null)
             return null;
-        } else if(clazz == String.class){
+        else if(clazz == String.class)
             return value;
-        } else if(clazz == int.class || clazz == Integer.class){
+        else if(clazz == int.class || clazz == Integer.class)
             return Integer.parseInt(value);
-        } else if(clazz == float.class || clazz == Float.class){
+        else if(clazz == float.class || clazz == Float.class)
             return Float.parseFloat(value);
-        } else if(clazz == double.class || clazz == Double.class){
+        else if(clazz == double.class || clazz == Double.class)
             return Double.parseDouble(value);
-        } else if(clazz == boolean.class || clazz == Boolean.class){
+        else if(clazz == boolean.class || clazz == Boolean.class)
             return getBoolean(value);
-        } else if(clazz == long.class || clazz == Long.class){
+        else if(clazz == long.class || clazz == Long.class)
             return Long.parseLong(value);
-        }
         return value;
     }
 
