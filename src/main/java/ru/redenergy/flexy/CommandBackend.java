@@ -142,6 +142,10 @@ public class CommandBackend {
             }
             Par par = getParameter(annotations);
             if(par != null){
+                if(clazz.isAssignableFrom(Optional.class)){
+                    Object value = getTypeValue(result.getParameters().get(par.value()), par.type());
+                    return Optional.fromNullable(value);
+                }
                 return getTypeValue(result.getParameters().get(par.value()), clazz);
             }
             return null;
@@ -155,18 +159,18 @@ public class CommandBackend {
             return null;
         } else if(clazz == String.class){
             return value;
-        } else if(clazz == int.class){
+        } else if(clazz == int.class || clazz == Integer.class){
             return Integer.parseInt(value);
-        } else if(clazz == float.class){
+        } else if(clazz == float.class || clazz == Float.class){
             return Float.parseFloat(value);
-        } else if(clazz == double.class){
+        } else if(clazz == double.class || clazz == Double.class){
             return Double.parseDouble(value);
-        } else if(clazz == boolean.class){
+        } else if(clazz == boolean.class || clazz == Boolean.class){
             return getBoolean(value);
-        } else if(clazz == long.class){
+        } else if(clazz == long.class || clazz == Long.class){
             return Long.parseLong(value);
         }
-        return null;
+        return value;
     }
 
     private boolean getBoolean(String value){
