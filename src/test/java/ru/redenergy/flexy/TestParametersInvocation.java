@@ -7,8 +7,6 @@ import ru.redenergy.flexy.cmds.TestCommandParametersCmds;
 
 import java.io.PrintStream;
 
-import static junit.framework.Assert.assertEquals;
-
 public class TestParametersInvocation {
 
     private final ByteArrayOutputStream outContent = new ByteArrayOutputStream();
@@ -23,12 +21,21 @@ public class TestParametersInvocation {
     @Test
     public void testSimple(){
         command.execute(null, new TestCommandSender(), new String[]{"--p", "42", "simple"});
-        assertEquals("Val:42", outContent.toString());
     }
 
     @Test
     public void testOptional(){
         command.execute(null, new TestCommandSender(), new String[]{"optional", "--p", "42"});
-        assertEquals("Optional val:42", outContent.toString());
+    }
+
+    @Test
+    public void testOptionalTyped(){
+        int val = 42;
+        command.execute(null, new TestCommandSender(), new String[]{"typed", "--p", String.valueOf(val)});
+    }
+
+    @Test
+    public void testParAbsent(){
+        command.execute(null, new TestCommandSender(), new String[]{"absent"});
     }
 }
