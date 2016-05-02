@@ -1,12 +1,15 @@
 package ru.redenergy.flexy;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
+import com.google.common.collect.Iterables;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.text.TextComponentBase;
 import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraft.util.text.TextFormatting;
+import net.minecraft.util.text.event.ClickEvent;
 import ru.redenergy.flexy.annotation.Arg;
 import ru.redenergy.flexy.annotation.Command;
 import ru.redenergy.flexy.annotation.Flag;
@@ -37,6 +40,29 @@ public class CommandBackend {
     public CommandBackend(FlexyCommand command) {
         this.command = command;
         collectCommands();
+    }
+
+    public void displayUsage(ICommandSender sender){
+        for(CommandConfiguration config: configs){
+            Command command = config.getCommandMethod().getAnnotation(Command.class);
+            if(!command.displayable()) continue;
+            String view = "/" + this.command.getCommandName() + " " + command.value().replace("{", "<").replace("}", ">") + " ";
+            StringBuilder options = new StringBuilder();
+            if(!config.getAvailableFlags().isEmpty()){
+                for(String flag: config.getAvailableFlags())
+                    options.append("[").append(flag).append("]").append(" ");
+                options.append(" ");
+            }
+            if(!config.getAvailableParameters().isEmpty()){
+                for (String par: config.getAvailableParameters())
+                    options.append("[").append(par).append(" ").append("<v>").append("]").append(" ");
+                options.append(" ");
+            }
+            String output = view + options.toString();
+            TextComponentTranslation textcomponenttranslation = new TextComponentTranslation(output);
+            textcomponenttranslation.getChatStyle().setChatClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/" + this.command.getCommandName() + " "));
+            sender.addChatMessage(textcomponenttranslation);
+        }
     }
 
     /**
