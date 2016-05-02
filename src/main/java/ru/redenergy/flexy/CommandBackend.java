@@ -47,22 +47,34 @@ public class CommandBackend {
             Command command = config.getCommandMethod().getAnnotation(Command.class);
             if(!command.displayable()) continue;
             String view = "/" + this.command.getCommandName() + " " + command.value().replace("{", "<").replace("}", ">") + " ";
-            StringBuilder options = new StringBuilder();
-            if(!config.getAvailableFlags().isEmpty()){
-                for(String flag: config.getAvailableFlags())
-                    options.append("[").append(flag).append("]").append(" ");
-                options.append(" ");
-            }
-            if(!config.getAvailableParameters().isEmpty()){
-                for (String par: config.getAvailableParameters())
-                    options.append("[").append(par).append(" ").append("<v>").append("]").append(" ");
-                options.append(" ");
-            }
+            StringBuilder options = new StringBuilder()
+                    .append(getDisplayableFlags(config))
+                    .append(getDisplayableParameters(config));
             String output = view + options.toString();
             TextComponentTranslation textcomponenttranslation = new TextComponentTranslation(output);
             textcomponenttranslation.getChatStyle().setChatClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/" + this.command.getCommandName() + " "));
             sender.addChatMessage(textcomponenttranslation);
         }
+    }
+
+    private StringBuilder getDisplayableFlags(CommandConfiguration config){
+        StringBuilder flags = new StringBuilder();
+        if(!config.getAvailableFlags().isEmpty()){
+            for(String flag: config.getAvailableFlags())
+                flags.append("[").append(flag).append("]").append(" ");
+            flags.append(" ");
+        }
+        return flags;
+    }
+
+    private StringBuilder getDisplayableParameters(CommandConfiguration config){
+        StringBuilder parameters = new StringBuilder();
+        if(!config.getAvailableParameters().isEmpty()){
+            for (String par: config.getAvailableParameters())
+                parameters.append("[").append(par).append(" ").append("<v>").append("]").append(" ");
+            parameters.append(" ");
+        }
+        return parameters;
     }
 
     /**
