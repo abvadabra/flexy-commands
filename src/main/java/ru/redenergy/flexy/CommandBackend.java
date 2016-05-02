@@ -45,7 +45,7 @@ public class CommandBackend {
     public void displayUsage(ICommandSender sender){
         for(CommandConfiguration config: configs){
             Command command = config.getCommandMethod().getAnnotation(Command.class);
-            if(!command.displayable()) continue;
+            if(!command.displayable() || !hasPermission(command, sender)) continue;
             String view = "/" + this.command.getCommandName() + " " + command.value().replace("{", "<").replace("}", ">") + " ";
             StringBuilder options = new StringBuilder()
                     .append(getDisplayableFlags(config))
