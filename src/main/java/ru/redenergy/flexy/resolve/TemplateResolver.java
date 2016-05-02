@@ -72,6 +72,8 @@ public class TemplateResolver {
         if(!possiblePars.isEmpty())
             for(String par: possiblePars) {
                 int parIndex = args.indexOf(par);
+                if(parIndex == -1)
+                    continue;
                 if (parIndex >= 0 && parIndex + 1 < args.size()){
                     String val = args.remove(parIndex + 1);
                     args.remove(parIndex);
