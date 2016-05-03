@@ -16,6 +16,12 @@ public abstract class FlexyCommand extends CommandBase {
     private final CommandBackend backend = new CommandBackend(this);
 
     @Override
+    public String getCommandUsage(ICommandSender sender) {
+        backend.displayUsage(sender);
+        return null; //will cause non-critical NPE on client side but it's the only way to do it without patching
+    }
+
+    @Override
     public void execute(MinecraftServer server, ICommandSender sender, String[] args) {
         try {
             backend.resolveExecute(sender, args);

@@ -1,12 +1,15 @@
 package ru.redenergy.flexy;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
+import com.google.common.collect.Iterables;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.text.TextComponentBase;
 import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraft.util.text.TextFormatting;
+import net.minecraft.util.text.event.ClickEvent;
 import ru.redenergy.flexy.annotation.Arg;
 import ru.redenergy.flexy.annotation.Command;
 import ru.redenergy.flexy.annotation.Flag;
@@ -37,6 +40,41 @@ public class CommandBackend {
     public CommandBackend(FlexyCommand command) {
         this.command = command;
         collectCommands();
+    }
+
+    public void displayUsage(ICommandSender sender){
+        for(CommandConfiguration config: configs){
+            Command command = config.getCommandMethod().getAnnotation(Command.class);
+            if(!command.displayable() || !hasPermission(command, sender)) continue;
+            String view = "/" + this.command.getCommandName() + " " + command.value().replace("{", "<").replace("}", ">") + " ";
+            StringBuilder options = new StringBuilder()
+                    .append(getDisplayableFlags(config))
+                    .append(getDisplayableParameters(config));
+            String output = view + options.toString();
+            TextComponentTranslation textcomponenttranslation = new TextComponentTranslation(output);
+            textcomponenttranslation.getChatStyle().setChatClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/" + this.command.getCommandName() + " "));
+            sender.addChatMessage(textcomponenttranslation);
+        }
+    }
+
+    private StringBuilder getDisplayableFlags(CommandConfiguration config){
+        StringBuilder flags = new StringBuilder();
+        if(!config.getAvailableFlags().isEmpty()){
+            for(String flag: config.getAvailableFlags())
+                flags.append("[").append(flag).append("]").append(" ");
+            flags.append(" ");
+        }
+        return flags;
+    }
+
+    private StringBuilder getDisplayableParameters(CommandConfiguration config){
+        StringBuilder parameters = new StringBuilder();
+        if(!config.getAvailableParameters().isEmpty()){
+            for (String par: config.getAvailableParameters())
+                parameters.append("[").append(par).append(" ").append("<v>").append("]").append(" ");
+            parameters.append(" ");
+        }
+        return parameters;
     }
 
     /**

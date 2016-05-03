@@ -20,4 +20,7 @@ public @interface Command {
 
     /** if command disabled it will not be collected */
     boolean disabled() default false;
+
+    /** whether or not this command should be displayed in /help output */
+    boolean displayable() default true;
 }
