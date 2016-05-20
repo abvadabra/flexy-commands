@@ -3,6 +3,7 @@ package ru.redenergy.flexy;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandHandler;
 import net.minecraft.command.ICommandSender;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraft.util.text.TextFormatting;
@@ -18,7 +19,10 @@ public abstract class FlexyCommand extends CommandBase {
     @Override
     public String getCommandUsage(ICommandSender sender) {
         backend.displayUsage(sender);
-        return null; //will cause non-critical NPE on client side but it's the only way to do it without patching
+        if(sender instanceof EntityPlayer)
+            return null; //will cause non-critical NPE on client side but it's the only way to do it without patching
+        else
+            return ""; //we can't return null on server side because it will fuck everything up :)
     }
 
     @Override
@@ -29,7 +33,7 @@ public abstract class FlexyCommand extends CommandBase {
             exception.printStackTrace();
 
             TextComponentTranslation msg = new TextComponentTranslation("commands.generic.exception");
-            msg.getChatStyle().setColor(TextFormatting.RED);
+            msg.getStyle().setColor(TextFormatting.RED);
             sender.addChatMessage(msg);
         }
     }

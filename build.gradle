@@ -1,0 +1,107 @@
+buildscript {
+    repositories {
+        mavenCentral()
+        maven {
+            name = "forge"
+            url = "http://files.minecraftforge.net/maven"
+        }
+        maven {
+            name = "sonatype"
+            url = "https://oss.sonatype.org/content/repositories/snapshots/"
+        }
+    }
+    dependencies {
+        classpath 'net.minecraftforge.gradle:ForgeGradle:2.2-SNAPSHOT'
+    }
+}
+
+plugins {
+    id "com.jfrog.bintray" version "1.6"
+}
+apply plugin: 'net.minecraftforge.gradle.forge'
+apply plugin: 'maven-publish'
+
+repositories {
+    maven { url = "https://dl.bintray.com/fredenergy/maven"}
+    maven { url = "https://jitpack.io" }
+    maven { url = "https://repo.spongepowered.org/maven" }
+    maven { url = "http://nexus.theyeticave.net/content/repositories/pub_releases" }
+    maven { url = "https://hub.spigotmc.org/nexus/content/repositories/snapshots" }
+}
+
+def build_number = System.getenv("BUILD_NUMBER")
+def build_status = build_number ? "-" + build_number : "-unknown"
+
+version = "1.1.0" + build_status
+group= "ru.redenergy"
+archivesBaseName = "flexy-commands"
+
+minecraft {
+    version = "1.9.4-12.17.0.1909-1.9.4"
+    runDir = "eclipse"
+    mappings = "snapshot_20160518"
+    makeObfSourceJar = false
+}
+
+configurations {
+    deploy
+    compile.extendsFrom deploy
+}
+
+task devJar(type: Jar) {
+    from sourceSets.main.output
+    classifier = 'dev'
+}
+
+tasks.build.dependsOn('devJar')
+
+artifacts {
+    archives devJar
+    archives jar
+}
+
+compileJava {
+    sourceCompatibility = 1.8
+    targetCompatibility = 1.8
+}
+
+bintray {
+    user = System.getenv('BINTRAY_USER')
+    key = System.getenv('BINTRAY_KEY')
+    configurations = ['archives']
+    pkg {
+        repo = 'maven'
+        name = 'flexy-commands'
+        userOrg = user
+        publicDownloadNumbers = true
+        licenses = ["MIT"]
+        vcsUrl = "https://github.com/FRedEnergy/flexy-commands.git"
+        //noinspection GroovyAssignabilityCheck
+        version {
+            name = project.version
+            desc = "Flexible API for commands in Forge"
+        }
+    }
+}
+
+dependencies {
+    compile 'ru.redenergy:forge-vault:1.0.0-1.9'
+    compile 'org.spongepowered:spongeapi:3.1.0-SNAPSHOT'
+    compile 'org.bukkit:bukkit:1.9-R0.1-SNAPSHOT'
+    compile 'net.milkbowl.vault:VaultAPI:1.6'
+    testCompile "junit:junit:4.12"
+}
+
+processResources{
+    inputs.property "version", project.version
+    inputs.property "mcversion", project.minecraft.version
+
+    from(sourceSets.main.resources.srcDirs) {
+        include 'mcmod.info'
+
+        expand 'version':project.version, 'mcversion':project.minecraft.version
+    }
+    from(sourceSets.main.resources.srcDirs) {
+        exclude 'mcmod.info'
+    }
+}

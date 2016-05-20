@@ -52,7 +52,7 @@ public class CommandBackend {
                     .append(getDisplayableParameters(config));
             String output = view + options.toString();
             TextComponentTranslation textcomponenttranslation = new TextComponentTranslation(output);
-            textcomponenttranslation.getChatStyle().setChatClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/" + this.command.getCommandName() + " "));
+            textcomponenttranslation.getStyle().setClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/" + this.command.getCommandName() + " "));
             sender.addChatMessage(textcomponenttranslation);
         }
     }
@@ -114,7 +114,7 @@ public class CommandBackend {
         if (executed)
             return;
         TextComponentBase msg = new TextComponentTranslation("commands.generic.notFound");
-        msg.getChatStyle().setColor(TextFormatting.RED);
+        msg.getStyle().setColor(TextFormatting.RED);
         sender.addChatMessage(msg);
     }
 
@@ -132,7 +132,7 @@ public class CommandBackend {
             invokeCommand(config, sender, result);
         } else {
             TextComponentBase msg = new TextComponentTranslation("commands.generic.permission");
-            msg.getChatStyle().setColor(TextFormatting.RED);
+            msg.getStyle().setColor(TextFormatting.RED);
             sender.addChatMessage(msg);
         }
     }
@@ -143,7 +143,7 @@ public class CommandBackend {
             command.getCommandMethod().invoke(this.command, arguments);
         } else {
             TextComponentTranslation msg = new TextComponentTranslation("commands.generic.usage", new TextComponentTranslation(this.command.getCommandUsage(sender)));
-            msg.getChatStyle().setColor(TextFormatting.RED);
+            msg.getStyle().setColor(TextFormatting.RED);
             sender.addChatMessage(msg);
         }
     }
