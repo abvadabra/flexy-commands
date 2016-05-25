@@ -32,7 +32,7 @@ repositories {
 def build_number = System.getenv("BUILD_NUMBER")
 def build_status = build_number ? "-" + build_number : "-unknown"
 
-version = "1.1.0" + build_status
+version = "1.2.0" + build_status
 group= "ru.redenergy"
 archivesBaseName = "flexy-commands"
 
