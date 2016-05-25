@@ -1,8 +1,6 @@
 package ru.redenergy.flexy;
 
-import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
-import com.google.common.collect.Iterables;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.MinecraftServer;
@@ -10,15 +8,21 @@ import net.minecraft.util.text.TextComponentBase;
 import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraft.util.text.event.ClickEvent;
+import org.apache.commons.lang3.ArrayUtils;
 import ru.redenergy.flexy.annotation.Arg;
 import ru.redenergy.flexy.annotation.Command;
 import ru.redenergy.flexy.annotation.Flag;
 import ru.redenergy.flexy.annotation.Par;
+import ru.redenergy.flexy.config.CommandConfiguration;
+import ru.redenergy.flexy.config.ExceptionHandlerConfiguration;
+import ru.redenergy.flexy.config.MethodConfiguration;
 import ru.redenergy.flexy.permission.IProvider;
 import ru.redenergy.flexy.resolve.ResolveResult;
 import ru.redenergy.flexy.resolve.TemplateResolver;
 
 import java.lang.annotation.Annotation;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -31,7 +35,9 @@ public class CommandBackend {
 
     private static IProvider provider = new IProvider.VanillaProvider();
 
+    private final MethodHandles.Lookup lookup = MethodHandles.lookup();
     private final TemplateResolver resolver = new TemplateResolver();
+    private final ExceptionMapper exceptionMapper = new ExceptionMapper();
     private final FlexyCommand command;
     private boolean collected = false;
 
@@ -39,12 +45,12 @@ public class CommandBackend {
 
     public CommandBackend(FlexyCommand command) {
         this.command = command;
-        collectCommands();
+        prepare();
     }
 
     public void displayUsage(ICommandSender sender){
         for(CommandConfiguration config: configs){
-            Command command = config.getCommandMethod().getAnnotation(Command.class);
+            Command command = config.getCommand();
             if(!command.displayable() || !hasPermission(command, sender)) continue;
             String view = "/" + this.command.getCommandName() + " " + command.value().replace("{", "<").replace("}", ">") + " ";
             StringBuilder options = new StringBuilder()
@@ -77,19 +83,24 @@ public class CommandBackend {
         return parameters;
     }
 
+    public void prepare(){
+        if(collected)
+            throw new RuntimeException("Attempt to prepare command more that once is unacceptable");
+        collectCommands();
+        exceptionMapper.handlesLookup(this.command.getClass());
+    }
+
     /**
      * Scans class and remembers all methods annotated with @Command annotation to be included into resolving strategy
      */
-    public void collectCommands(){
-        if(collected)
-            throw new RuntimeException("Attempt to collect commands more that once is unacceptable");
+    private void collectCommands(){
         for(Method m : command.getClass().getMethods())
             if(m.isAnnotationPresent(Command.class))
                 collectMethod(m);
         collected = true;
     }
 
-    private void collectMethod(Method method){
+    private void collectMethod(Method method) {
         Command command = method.getAnnotation(Command.class);
         if(command.disabled())
             return;
@@ -103,7 +114,13 @@ public class CommandBackend {
                     flags.add(((Flag) annotation).value());
                 else if(annotation instanceof Par)
                     parameters.add(((Par) annotation).value());
-        configs.add(new CommandConfiguration(method, commandParameters, commandAnnotations, flags, parameters));
+        MethodHandle handle;
+        try{
+            handle = lookup.unreflect(method);
+        } catch (IllegalAccessException exc){
+            throw new RuntimeException("Unable to get access to command " + method, exc);
+        }
+        configs.add(new CommandConfiguration(handle, commandParameters, commandAnnotations, flags, parameters, command));
     }
 
     public void resolveExecute(ICommandSender sender, String[] args) throws InvocationTargetException, IllegalAccessException {
@@ -119,7 +136,7 @@ public class CommandBackend {
     }
 
     private boolean resolveExecuteCommand(CommandConfiguration config, ICommandSender sender, String[] args) throws InvocationTargetException, IllegalAccessException {
-        String template = config.getCommandMethod().getAnnotation(Command.class).value();
+        String template = config.getCommand().value();
         ResolveResult result = resolver.resolve(template, args, config.getAvailableFlags(), config.getAvailableParameters());
         if (result.isSuccess())
             executeCommand(config, sender, result);
@@ -127,7 +144,7 @@ public class CommandBackend {
     }
 
     private void executeCommand(CommandConfiguration config, ICommandSender sender, ResolveResult result) throws InvocationTargetException, IllegalAccessException {
-        Command command = config.getCommandMethod().getAnnotation(Command.class);
+        Command command = config.getCommand();
         if (hasPermission(command, sender)) {
             invokeCommand(config, sender, result);
         } else {
@@ -137,15 +154,33 @@ public class CommandBackend {
         }
     }
 
-    private void invokeCommand(CommandConfiguration command, ICommandSender sender, ResolveResult result) throws InvocationTargetException, IllegalAccessException {
-        Object[] arguments = getArguments(command, sender, result);
+    private void invokeCommand(CommandConfiguration command, ICommandSender sender, ResolveResult result) throws IllegalAccessException {
+        Object[] arguments = getMethodArguments(command, sender, result);
         if (arguments != null) {
-            command.getCommandMethod().invoke(this.command, arguments);
+            try {
+                command.getMethod().invokeWithArguments(ArrayUtils.add(arguments, 0, this.command));
+            } catch (Throwable invokeEx){
+                raiseInvocationException(invokeEx, sender, result);
+            }
         } else {
             TextComponentTranslation msg = new TextComponentTranslation("commands.generic.usage", new TextComponentTranslation(this.command.getCommandUsage(sender)));
             msg.getStyle().setColor(TextFormatting.RED);
             sender.addChatMessage(msg);
         }
+    }
+
+    private void raiseInvocationException(Throwable error, ICommandSender sender, ResolveResult result){
+        ExceptionHandlerConfiguration handler = exceptionMapper.getHandler(error);
+        if(handler != null)
+            try {
+                Object[] exArguments = getExceptionHandlerArgs(handler, sender, result, error);
+                handler.getMethod().invokeWithArguments(ArrayUtils.add(exArguments, 0, this.command));
+            } catch (Throwable exp){
+                //if we throw an exception here it will interrupt other command invocation, so just print it
+                new RuntimeException("Error while calling exception handler " + handler.getMethod(), exp).printStackTrace();
+            }
+        else
+            error.printStackTrace();
     }
 
     private boolean hasPermission(Command command, ICommandSender sender){
@@ -154,7 +189,24 @@ public class CommandBackend {
                 || (sender instanceof EntityPlayerMP && provider.hasPermission((EntityPlayerMP) sender, command.permission()));
     }
 
-    private Object[] getArguments(CommandConfiguration command, ICommandSender sender, ResolveResult result){
+    private Object[] getExceptionHandlerArgs(ExceptionHandlerConfiguration config, ICommandSender sender, ResolveResult result, Throwable throwable){
+        Object[] parameters = new Object[config.getCommandParameters().length];
+        for(int i = 0; i < parameters.length; i++) {
+            Class type = config.getCommandParameters()[i];
+            if (throwable.getClass().isAssignableFrom(type)){
+                parameters[i] = throwable;
+            } else {
+                Object value = getAppropriateValue(config.getCommandParameters()[i], config.getAnnotations()[i], sender, result);
+                if(value == null)
+                    return null;
+                else
+                    parameters[i] = value;
+            }
+        }
+        return parameters;
+    }
+
+    private Object[] getMethodArguments(MethodConfiguration command, ICommandSender sender, ResolveResult result){
         Object[] parameters = new Object[command.getCommandParameters().length];
         for(int i = 0; i < command.getCommandParameters().length; i++){
             Object value = getAppropriateValue(command.getCommandParameters()[i], command.getAnnotations()[i], sender, result);
@@ -166,9 +218,11 @@ public class CommandBackend {
         return parameters;
     }
 
-    private Object getAppropriateValue(Class<?> clazz, Annotation[] annotations, ICommandSender sender, ResolveResult result){
-        if(clazz.isAssignableFrom(sender.getClass())){
+    private Object getAppropriateValue(Class<?> clazz, Annotation[] annotations, ICommandSender sender, ResolveResult result) {
+        if (clazz.isAssignableFrom(sender.getClass())) {
             return sender;
+        } else if(clazz.isAssignableFrom(ResolveResult.class)){
+            return result;
         } else {
             Arg arg = getArgument(annotations);
             if (arg != null)
