@@ -6,7 +6,11 @@ There is no need to parse user input by yourself, just define command specifics 
 
 ```
 
-@Command("give {player} {item}")
+public String getCommandName(){
+    return "give"; 
+}
+
+@Command("{player} {item}")
 public void command(@Arg("player") String playerArg, @Arg("item") String itemArg){
     getPlayer(playerArg).inventory.addItem(Item.getItem(itemArg));
 }
